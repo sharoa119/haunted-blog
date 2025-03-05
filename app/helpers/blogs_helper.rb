@@ -2,6 +2,6 @@
 
 module BlogsHelper
   def format_content(blog)
-    simple_format(h(blog.content))
+    sanitize(simple_format(blog.content))
   end
 end
