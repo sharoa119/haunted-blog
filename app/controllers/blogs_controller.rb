@@ -2,15 +2,18 @@
 
 class BlogsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[index show]
-
   before_action :set_blog, only: %i[show edit update destroy]
   before_action :authorize_user!, only: %i[edit update destroy]
+  before_action :require_login_for_secret_blog!, only: %i[show]
 
   def index
     @blogs = Blog.search(params[:term]).published.default_order
   end
 
-  def show; end
+  def show
+    # 秘密のブログへのアクセス制限
+    redirect_to blogs_path, alert: 'You cannot access this blog.' if @blog.secret? && @blog.user != current_user
+  end
 
   def new
     @blog = Blog.new
@@ -50,6 +53,12 @@ class BlogsController < ApplicationController
 
   def authorize_user!
     raise ActiveRecord::RecordNotFound unless @blog.owned_by?(current_user)
+  end
+
+  def require_login_for_secret_blog!
+    return unless @blog.secret?
+
+    raise ActiveRecord::RecordNotFound if !user_signed_in? || @blog.user != current_user
   end
 
   def blog_params
