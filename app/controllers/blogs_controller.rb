@@ -22,6 +22,7 @@ class BlogsController < ApplicationController
 
   def create
     @blog = current_user.blogs.new(blog_params)
+    @blog.random_eyecatch = params[:blog][:random_eyecatch] if can_use_premium_feature?
 
     if @blog.save
       redirect_to blog_url(@blog), notice: 'Blog was successfully created.'
@@ -32,6 +33,7 @@ class BlogsController < ApplicationController
 
   def update
     if @blog.update(blog_params)
+      @blog.update(random_eyecatch: params[:blog][:random_eyecatch]) if can_use_premium_feature?
       redirect_to blog_url(@blog), notice: 'Blog was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -61,6 +63,10 @@ class BlogsController < ApplicationController
   end
 
   def blog_params
-    params.require(:blog).permit(:title, :content, :secret, :random_eyecatch)
+    params.require(:blog).permit(:title, :content, :secret)
+  end
+
+  def can_use_premium_feature?
+    current_user&.premium?
   end
 end

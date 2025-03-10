@@ -7,4 +7,8 @@ class User < ApplicationRecord
   has_many :likings, dependent: :destroy
 
   validates :nickname, uniqueness: true
+
+  def premium?
+    premium
+  end
 end
