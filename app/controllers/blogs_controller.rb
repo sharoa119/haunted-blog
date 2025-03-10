@@ -11,7 +11,6 @@ class BlogsController < ApplicationController
   end
 
   def show
-    # 秘密のブログへのアクセス制限
     redirect_to blogs_path, alert: 'You cannot access this blog.' if @blog.secret? && @blog.user != current_user
   end
 
