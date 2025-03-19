@@ -32,8 +32,10 @@ class BlogsController < ApplicationController
   end
 
   def update
-    if @blog.update(blog_params)
-      @blog.update(random_eyecatch: params[:blog][:random_eyecatch]) if can_use_premium_feature?
+    update_params = blog_params
+    update_params[:random_eyecatch] = params[:blog][:random_eyecatch] if can_use_premium_feature?
+
+    if @blog.update(update_params)
       redirect_to blog_url(@blog), notice: 'Blog was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
