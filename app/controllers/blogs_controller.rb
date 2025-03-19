@@ -2,14 +2,17 @@
 
 class BlogsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[index show]
-
   before_action :set_blog, only: %i[show edit update destroy]
+  before_action :authorize_user!, only: %i[edit update destroy]
+  before_action :require_login_for_secret_blog!, only: %i[show]
 
   def index
     @blogs = Blog.search(params[:term]).published.default_order
   end
 
-  def show; end
+  def show
+    raise ActiveRecord::RecordNotFound if @blog.secret? && @blog.user != current_user
+  end
 
   def new
     @blog = Blog.new
@@ -19,6 +22,7 @@ class BlogsController < ApplicationController
 
   def create
     @blog = current_user.blogs.new(blog_params)
+    @blog.random_eyecatch = params[:blog][:random_eyecatch] if can_use_premium_feature?
 
     if @blog.save
       redirect_to blog_url(@blog), notice: 'Blog was successfully created.'
@@ -28,7 +32,10 @@ class BlogsController < ApplicationController
   end
 
   def update
-    if @blog.update(blog_params)
+    update_params = blog_params
+    update_params[:random_eyecatch] = params[:blog][:random_eyecatch] if can_use_premium_feature?
+
+    if @blog.update(update_params)
       redirect_to blog_url(@blog), notice: 'Blog was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -47,7 +54,21 @@ class BlogsController < ApplicationController
     @blog = Blog.find(params[:id])
   end
 
+  def authorize_user!
+    raise ActiveRecord::RecordNotFound unless @blog.owned_by?(current_user)
+  end
+
+  def require_login_for_secret_blog!
+    return unless @blog.secret?
+
+    raise ActiveRecord::RecordNotFound if !user_signed_in? || @blog.user != current_user
+  end
+
   def blog_params
-    params.require(:blog).permit(:title, :content, :secret, :random_eyecatch)
+    params.require(:blog).permit(:title, :content, :secret)
+  end
+
+  def can_use_premium_feature?
+    current_user&.premium?
   end
 end
