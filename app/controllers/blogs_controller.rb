@@ -11,7 +11,7 @@ class BlogsController < ApplicationController
   end
 
   def show
-    redirect_to blogs_path, alert: 'You cannot access this blog.' if @blog.secret? && @blog.user != current_user
+    raise ActiveRecord::RecordNotFound if @blog.secret? && @blog.user != current_user
   end
 
   def new
